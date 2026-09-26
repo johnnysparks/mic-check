@@ -1,0 +1,866 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#080a0f" />
+    <meta
+      name="description"
+      content="Room Check: a browser-local three-band microphone soundcheck meter."
+    />
+    <title>Room Check</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080a0f;
+        --panel: #11151d;
+        --panel-strong: #161b25;
+        --line: #2a3340;
+        --muted: #93a0b1;
+        --text: #f5f7fb;
+        --amber: #ffbf3c;
+        --cyan: #43e3f3;
+        --coral: #ff6d6d;
+        --green: #64df9c;
+        --danger: #ff9a9a;
+        --radius: 14px;
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-right: env(safe-area-inset-right, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --safe-left: env(safe-area-inset-left, 0px);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 280px;
+        background: var(--bg);
+      }
+
+      body {
+        min-height: 100svh;
+        margin: 0;
+        background:
+          radial-gradient(circle at 50% -10%, #1a2331 0, transparent 42%),
+          var(--bg);
+        color: var(--text);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        letter-spacing: 0.01em;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .app-shell {
+        width: min(100%, 1120px);
+        min-height: 100svh;
+        margin: 0 auto;
+        padding: max(1.1rem, var(--safe-top))
+          max(1rem, var(--safe-right)) max(1.1rem, var(--safe-bottom))
+          max(1rem, var(--safe-left));
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .app-header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.15rem 0 0.4rem;
+      }
+
+      .eyebrow {
+        margin: 0 0 0.35rem;
+        color: var(--muted);
+        font-size: clamp(0.68rem, 1.5vw, 0.82rem);
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--text);
+        font-size: clamp(1.85rem, 4vw, 3.15rem);
+        line-height: 0.98;
+        letter-spacing: 0.1em;
+        font-weight: 800;
+      }
+
+      .mic-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-height: 2.45rem;
+        padding: 0.62rem 0.82rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        color: var(--muted);
+        background: rgba(17, 21, 29, 0.86);
+        font-size: clamp(0.68rem, 1.7vw, 0.82rem);
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        white-space: nowrap;
+      }
+
+      .status-dot {
+        width: 0.62rem;
+        height: 0.62rem;
+        flex: 0 0 auto;
+        border-radius: 50%;
+        background: #687486;
+        box-shadow: 0 0 0 3px rgba(104, 116, 134, 0.13);
+      }
+
+      .mic-status.is-listening {
+        color: var(--green);
+        border-color: rgba(100, 223, 156, 0.36);
+      }
+
+      .mic-status.is-listening .status-dot {
+        background: var(--green);
+        box-shadow: 0 0 0 3px rgba(100, 223, 156, 0.14),
+          0 0 14px rgba(100, 223, 156, 0.55);
+      }
+
+      .meters {
+        display: grid;
+        gap: 0.78rem;
+      }
+
+      .meter-card {
+        --accent: var(--amber);
+        position: relative;
+        display: grid;
+        gap: 0.78rem;
+        overflow: hidden;
+        padding: clamp(0.9rem, 2.5vw, 1.25rem);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: linear-gradient(135deg, rgba(22, 27, 37, 0.98), var(--panel));
+        box-shadow: 0 0.55rem 1.5rem rgba(0, 0, 0, 0.14);
+      }
+
+      .meter-card::before {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 0.22rem;
+        background: var(--accent);
+        content: "";
+      }
+
+      .meter-card[data-band="mid"] {
+        --accent: var(--cyan);
+      }
+
+      .meter-card[data-band="high"] {
+        --accent: var(--coral);
+      }
+
+      .meter-heading,
+      .readout-row,
+      .range-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .band-name {
+        color: var(--accent);
+        font-size: clamp(1.05rem, 2.5vw, 1.4rem);
+        font-weight: 900;
+        letter-spacing: 0.16em;
+      }
+
+      .band-range {
+        color: var(--muted);
+        font-size: clamp(0.75rem, 2vw, 0.95rem);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
+
+      .gauge {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(32, minmax(0, 1fr));
+        gap: clamp(2px, 0.45vw, 4px);
+        min-height: clamp(2.1rem, 5vw, 3.45rem);
+        padding: 0.34rem;
+        border: 1px solid #303947;
+        border-radius: 0.5rem;
+        background: #0a0d13;
+      }
+
+      .segment {
+        min-width: 0;
+        border-radius: 0.18rem;
+        background: #242d39;
+        opacity: 0.88;
+        transition: background-color 90ms linear, opacity 90ms linear,
+          box-shadow 90ms linear;
+      }
+
+      .segment.is-lit {
+        background: var(--accent);
+        opacity: 1;
+        box-shadow: 0 0 0.6rem color-mix(in srgb, var(--accent) 38%, transparent);
+      }
+
+      .peak-marker {
+        position: absolute;
+        top: -0.25rem;
+        bottom: -0.25rem;
+        left: calc(0.34rem + (100% - 0.68rem) * var(--peak-ratio));
+        z-index: 2;
+        width: 0.2rem;
+        border-radius: 0.2rem;
+        background: #fff;
+        box-shadow: 0 0 0.38rem rgba(255, 255, 255, 0.9);
+        pointer-events: none;
+        transform: translateX(-50%);
+      }
+
+      .db-value {
+        min-width: 8.8ch;
+        color: var(--text);
+        font-size: clamp(1.55rem, 4.5vw, 2.65rem);
+        line-height: 1;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .db-value.is-active {
+        color: var(--accent);
+      }
+
+      .peak-readout {
+        color: var(--muted);
+        font-size: clamp(0.7rem, 1.7vw, 0.82rem);
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .peak-readout strong {
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .meter-scale {
+        display: flex;
+        justify-content: space-between;
+        color: #687486;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .control-panel {
+        display: grid;
+        gap: 0.8rem;
+        padding-top: 0.15rem;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+      }
+
+      .control-button {
+        min-height: 3rem;
+        padding: 0.75rem 1.05rem;
+        border: 1px solid #3b4757;
+        border-radius: 0.55rem;
+        color: var(--text);
+        background: var(--panel-strong);
+        cursor: pointer;
+        font-size: clamp(0.74rem, 1.8vw, 0.88rem);
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        transition: border-color 120ms ease, background-color 120ms ease,
+          color 120ms ease, transform 120ms ease;
+      }
+
+      .control-button:hover:not(:disabled) {
+        border-color: #7f8b9b;
+        background: #202837;
+      }
+
+      .control-button:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      .control-button:focus-visible {
+        outline: 3px solid var(--cyan);
+        outline-offset: 3px;
+      }
+
+      .control-button.primary {
+        border-color: var(--cyan);
+        color: #061216;
+        background: var(--cyan);
+      }
+
+      .control-button.primary:hover:not(:disabled) {
+        border-color: #a9f6fb;
+        background: #a9f6fb;
+      }
+
+      .control-button.danger {
+        border-color: rgba(255, 109, 109, 0.55);
+        color: #ffdada;
+      }
+
+      .control-button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      .note,
+      .caveat {
+        max-width: 80ch;
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(0.72rem, 1.75vw, 0.86rem);
+        line-height: 1.55;
+      }
+
+      .note {
+        color: #d9e1ec;
+      }
+
+      .message {
+        display: none;
+        margin: 0;
+        padding: 0.75rem 0.9rem;
+        border: 1px solid rgba(255, 154, 154, 0.45);
+        border-radius: 0.55rem;
+        color: var(--danger);
+        background: rgba(103, 33, 43, 0.22);
+        font-size: clamp(0.72rem, 1.75vw, 0.86rem);
+        line-height: 1.5;
+      }
+
+      .message.is-visible {
+        display: block;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 500px) {
+        .app-shell {
+          gap: 0.78rem;
+        }
+
+        .app-header {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 0.8rem;
+        }
+
+        .mic-status {
+          align-self: stretch;
+          justify-content: center;
+        }
+
+        .meter-card {
+          gap: 0.64rem;
+        }
+
+        .controls {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .control-button:first-child {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (orientation: landscape) and (max-height: 680px) {
+        .app-shell {
+          max-width: 1280px;
+          gap: 0.65rem;
+          padding-top: max(0.75rem, var(--safe-top));
+          padding-bottom: max(0.75rem, var(--safe-bottom));
+        }
+
+        .app-header {
+          padding-bottom: 0.15rem;
+        }
+
+        h1 {
+          font-size: clamp(1.55rem, 4vw, 2.35rem);
+        }
+
+        .meters {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: stretch;
+        }
+
+        .meter-card {
+          min-width: 0;
+          padding: 0.85rem;
+        }
+
+        .meter-heading,
+        .readout-row {
+          display: grid;
+          gap: 0.35rem;
+        }
+
+        .peak-readout {
+          text-align: left;
+        }
+
+        .gauge {
+          min-height: 3rem;
+        }
+
+        .control-panel {
+          grid-template-columns: auto 1fr;
+          align-items: center;
+        }
+
+        .note,
+        .caveat {
+          justify-self: end;
+          text-align: right;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Band soundcheck</p>
+          <h1>ROOM CHECK</h1>
+        </div>
+        <div id="mic-status" class="mic-status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="mic-status-text">MIC OFF</span>
+        </div>
+      </header>
+
+      <section id="meters" class="meters" aria-label="Room Check frequency meters">
+        <article class="meter-card" data-band="low">
+          <div class="meter-heading">
+            <span class="band-name">LOW</span>
+            <span class="band-range">45–250 Hz</span>
+          </div>
+          <div
+            id="gauge-low"
+            class="gauge"
+            role="meter"
+            aria-label="Low frequency relative level"
+            aria-valuemin="-80"
+            aria-valuemax="0"
+            aria-valuenow="-80"
+            aria-valuetext="Microphone off"
+          >
+            <span class="peak-marker" aria-hidden="true"></span>
+          </div>
+          <div class="meter-scale" aria-hidden="true">
+            <span>QUIET</span>
+            <span>LOUD</span>
+          </div>
+          <div class="readout-row">
+            <strong id="value-low" class="db-value">— dB</strong>
+            <span class="peak-readout">PEAK <strong id="peak-low">—</strong></span>
+          </div>
+        </article>
+
+        <article class="meter-card" data-band="mid">
+          <div class="meter-heading">
+            <span class="band-name">MID</span>
+            <span class="band-range">250–4,000 Hz</span>
+          </div>
+          <div
+            id="gauge-mid"
+            class="gauge"
+            role="meter"
+            aria-label="Mid frequency relative level"
+            aria-valuemin="-80"
+            aria-valuemax="0"
+            aria-valuenow="-80"
+            aria-valuetext="Microphone off"
+          >
+            <span class="peak-marker" aria-hidden="true"></span>
+          </div>
+          <div class="meter-scale" aria-hidden="true">
+            <span>QUIET</span>
+            <span>LOUD</span>
+          </div>
+          <div class="readout-row">
+            <strong id="value-mid" class="db-value">— dB</strong>
+            <span class="peak-readout">PEAK <strong id="peak-mid">—</strong></span>
+          </div>
+        </article>
+
+        <article class="meter-card" data-band="high">
+          <div class="meter-heading">
+            <span class="band-name">HIGH</span>
+            <span class="band-range">4,000–12,000 Hz</span>
+          </div>
+          <div
+            id="gauge-high"
+            class="gauge"
+            role="meter"
+            aria-label="High frequency relative level"
+            aria-valuemin="-80"
+            aria-valuemax="0"
+            aria-valuenow="-80"
+            aria-valuetext="Microphone off"
+          >
+            <span class="peak-marker" aria-hidden="true"></span>
+          </div>
+          <div class="meter-scale" aria-hidden="true">
+            <span>QUIET</span>
+            <span>LOUD</span>
+          </div>
+          <div class="readout-row">
+            <strong id="value-high" class="db-value">— dB</strong>
+            <span class="peak-readout">PEAK <strong id="peak-high">—</strong></span>
+          </div>
+        </article>
+      </section>
+
+      <section class="control-panel" aria-label="Microphone controls">
+        <div class="controls">
+          <button id="listen-button" class="control-button primary" type="button">
+            START LISTENING
+          </button>
+          <button id="hold-button" class="control-button" type="button" disabled>
+            HOLD
+          </button>
+          <button id="reset-button" class="control-button danger" type="button">
+            RESET PEAKS
+          </button>
+        </div>
+        <p id="message" class="message" role="alert"></p>
+        <p class="note">Place the phone at ear height for the most useful room check.</p>
+        <p class="caveat">
+          This meter shows the combined sound arriving at this phone. It cannot identify
+          which instrument caused a peak, and it is not a calibrated SPL meter.
+        </p>
+      </section>
+    </main>
+
+    <noscript>
+      <p>This app needs JavaScript to analyze microphone audio in your browser.</p>
+    </noscript>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const MIN_DB = -80;
+        const MAX_DB = 0;
+        const SEGMENT_COUNT = 32;
+        const bandDefinitions = [
+          { id: "low", label: "Low", minHz: 45, maxHz: 250 },
+          { id: "mid", label: "Mid", minHz: 250, maxHz: 4000 },
+          { id: "high", label: "High", minHz: 4000, maxHz: 12000 },
+        ];
+        const state = {
+          audioContext: null,
+          analyser: null,
+          source: null,
+          stream: null,
+          frequencyData: null,
+          frame: 0,
+          listening: false,
+          held: false,
+          levels: Object.fromEntries(bandDefinitions.map((band) => [band.id, MIN_DB])),
+          peaks: Object.fromEntries(bandDefinitions.map((band) => [band.id, MIN_DB])),
+        };
+
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const secureContext =
+          window.isSecureContext ||
+          window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1";
+        const hasMicrophoneApi =
+          Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) &&
+          Boolean(AudioContextClass);
+
+        const listenButton = document.getElementById("listen-button");
+        const holdButton = document.getElementById("hold-button");
+        const resetButton = document.getElementById("reset-button");
+        const message = document.getElementById("message");
+        const status = document.getElementById("mic-status");
+        const statusText = document.getElementById("mic-status-text");
+        const bandUi = {};
+
+        for (const band of bandDefinitions) {
+          const gauge = document.getElementById(`gauge-${band.id}`);
+          const segments = Array.from({ length: SEGMENT_COUNT }, () => {
+            const segment = document.createElement("span");
+            segment.className = "segment";
+            segment.setAttribute("aria-hidden", "true");
+            gauge.appendChild(segment);
+            return segment;
+          });
+          bandUi[band.id] = {
+            gauge,
+            segments,
+            marker: gauge.querySelector(".peak-marker"),
+            value: document.getElementById(`value-${band.id}`),
+            peak: document.getElementById(`peak-${band.id}`),
+          };
+        }
+
+        function setMessage(text) {
+          message.textContent = text;
+          message.classList.toggle("is-visible", Boolean(text));
+        }
+
+        function formatDb(value) {
+          return `${value.toFixed(1)} dB`;
+        }
+
+        function ratioForDb(value) {
+          return Math.max(0, Math.min(1, (value - MIN_DB) / (MAX_DB - MIN_DB)));
+        }
+
+        function renderBand(bandId) {
+          const ui = bandUi[bandId];
+          const level = state.levels[bandId];
+          const peak = state.peaks[bandId];
+          const levelRatio = ratioForDb(level);
+          const peakRatio = ratioForDb(peak);
+          const active = state.listening;
+
+          ui.segments.forEach((segment, index) => {
+            segment.classList.toggle("is-lit", index < Math.round(levelRatio * SEGMENT_COUNT));
+          });
+          ui.gauge.style.setProperty("--peak-ratio", peakRatio.toFixed(4));
+          ui.gauge.setAttribute("aria-valuenow", level.toFixed(1));
+          ui.gauge.setAttribute(
+            "aria-valuetext",
+            active ? `${formatDb(level)}, peak ${formatDb(peak)}` : "Microphone off",
+          );
+          ui.value.textContent = active ? formatDb(level) : "— dB";
+          ui.value.classList.toggle("is-active", active);
+          ui.peak.textContent = active ? formatDb(peak) : "—";
+        }
+
+        function renderAllBands() {
+          bandDefinitions.forEach((band) => renderBand(band.id));
+        }
+
+        function setStatus(listening) {
+          status.classList.toggle("is-listening", listening);
+          statusText.textContent = listening ? "LISTENING" : "MIC OFF";
+          listenButton.textContent = listening ? "STOP LISTENING" : "START LISTENING";
+          listenButton.classList.toggle("danger", listening);
+          listenButton.classList.toggle("primary", !listening);
+          holdButton.disabled = !listening;
+          holdButton.textContent = state.held ? "RESUME" : "HOLD";
+          holdButton.setAttribute("aria-pressed", String(state.held));
+        }
+
+        function stopAnimation() {
+          if (state.frame) {
+            cancelAnimationFrame(state.frame);
+            state.frame = 0;
+          }
+        }
+
+        function releaseAudio() {
+          stopAnimation();
+          if (state.source) {
+            state.source.disconnect();
+            state.source = null;
+          }
+          if (state.analyser) {
+            state.analyser.disconnect();
+            state.analyser = null;
+          }
+          if (state.stream) {
+            state.stream.getTracks().forEach((track) => track.stop());
+            state.stream = null;
+          }
+          if (state.audioContext) {
+            const closingContext = state.audioContext;
+            state.audioContext = null;
+            closingContext.close().catch(() => {});
+          }
+          state.frequencyData = null;
+          state.listening = false;
+          state.held = false;
+          setStatus(false);
+          renderAllBands();
+        }
+
+        function getAudioConstraints() {
+          const supported =
+            typeof navigator.mediaDevices.getSupportedConstraints === "function"
+              ? navigator.mediaDevices.getSupportedConstraints()
+              : {};
+          const audio = {};
+          ["echoCancellation", "noiseSuppression", "autoGainControl"].forEach((key) => {
+            if (!Object.keys(supported).length || supported[key]) {
+              audio[key] = false;
+            }
+          });
+          return { audio: Object.keys(audio).length ? audio : true };
+        }
+
+        function describeMicrophoneError(error) {
+          if (!error) return "The microphone could not be started. Try again.";
+          if (error.name === "NotAllowedError" || error.name === "SecurityError") {
+            return "Microphone permission was denied. Allow microphone access for this site, then try again.";
+          }
+          if (error.name === "NotFoundError") {
+            return "No microphone was found on this device.";
+          }
+          if (error.name === "NotReadableError") {
+            return "The microphone is busy or unavailable. Close other apps using it, then try again.";
+          }
+          return "The microphone could not be started. Check browser permission and try again.";
+        }
+
+        function bandLevel(data, sampleRate, band) {
+          const binWidth = sampleRate / 8192;
+          const firstBin = Math.max(0, Math.ceil(band.minHz / binWidth));
+          const lastBin = Math.min(data.length - 1, Math.floor(band.maxHz / binWidth));
+          let energy = 0;
+          let count = 0;
+          for (let index = firstBin; index <= lastBin; index += 1) {
+            const decibels = data[index];
+            if (!Number.isFinite(decibels)) continue;
+            const amplitude = 10 ** (decibels / 20);
+            energy += amplitude * amplitude;
+            count += 1;
+          }
+          if (!count || energy <= 0) return MIN_DB;
+          return Math.max(MIN_DB, Math.min(MAX_DB, 10 * Math.log10(energy / count)));
+        }
+
+        function draw() {
+          if (!state.listening || state.held || !state.analyser || !state.frequencyData) return;
+          state.analyser.getFloatFrequencyData(state.frequencyData);
+          for (const band of bandDefinitions) {
+            const level = bandLevel(state.frequencyData, state.audioContext.sampleRate, band);
+            state.levels[band.id] = level;
+            state.peaks[band.id] = Math.max(state.peaks[band.id], level);
+            renderBand(band.id);
+          }
+          state.frame = requestAnimationFrame(draw);
+        }
+
+        async function startListening() {
+          if (state.listening) {
+            releaseAudio();
+            setMessage("");
+            return;
+          }
+          if (!hasMicrophoneApi) {
+            setMessage("This browser does not support microphone analysis.");
+            return;
+          }
+          if (!secureContext) {
+            setMessage("Microphone access requires HTTPS (or localhost).");
+            return;
+          }
+
+          setMessage("");
+          listenButton.disabled = true;
+          try {
+            state.stream = await navigator.mediaDevices.getUserMedia(getAudioConstraints());
+            state.audioContext = new AudioContextClass();
+            await state.audioContext.resume();
+            state.analyser = state.audioContext.createAnalyser();
+            state.analyser.fftSize = 8192;
+            state.analyser.minDecibels = -100;
+            state.analyser.maxDecibels = -10;
+            state.analyser.smoothingTimeConstant = 0.62;
+            state.frequencyData = new Float32Array(state.analyser.frequencyBinCount);
+            state.source = state.audioContext.createMediaStreamSource(state.stream);
+            state.source.connect(state.analyser);
+            state.listening = true;
+            state.held = false;
+            setStatus(true);
+            renderAllBands();
+            draw();
+          } catch (error) {
+            releaseAudio();
+            setMessage(describeMicrophoneError(error));
+          } finally {
+            listenButton.disabled = false;
+          }
+        }
+
+        function toggleHold() {
+          if (!state.listening) return;
+          state.held = !state.held;
+          setStatus(true);
+          if (state.held) {
+            stopAnimation();
+          } else {
+            draw();
+          }
+        }
+
+        function resetPeaks() {
+          bandDefinitions.forEach((band) => {
+            state.peaks[band.id] = state.listening ? state.levels[band.id] : MIN_DB;
+            renderBand(band.id);
+          });
+        }
+
+        listenButton.addEventListener("click", startListening);
+        holdButton.addEventListener("click", toggleHold);
+        resetButton.addEventListener("click", resetPeaks);
+        window.addEventListener("pagehide", releaseAudio, { once: true });
+        window.addEventListener("beforeunload", releaseAudio, { once: true });
+
+        if (!hasMicrophoneApi) {
+          listenButton.disabled = true;
+          setMessage("This browser does not support microphone analysis.");
+        } else if (!secureContext) {
+          setMessage("Microphone access requires HTTPS (or localhost).");
+        }
+
+        renderAllBands();
+      })();
+    </script>
+  </body>
+</html>
