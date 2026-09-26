@@ -1,20 +1,19 @@
 # Room Check design QA
 
-source visual truth path: `https://room-check-band-soundcheck.sparks-house-6466.chatgpt.site/`
-implementation screenshot path: CUA in-app browser capture of `http://localhost:4173/` during verification (desktop viewport, 1280 × 720 CSS px)
-viewport: 1280 × 720 CSS px; implementation rendered at 1× density
+source visual truth path: `/tmp/codex-remote-attachments/01a0de58-aeb8-7ab1-8fa5-f2816882a2ab/BF928BD0-4CDE-4210-BD51-37782550604B/1-Photo-1.jpg`
+implementation screenshot path: not captured for this iteration; the browser session was unavailable because the Mac was locked
+viewport: supplied mobile screenshot; implementation screenshot unavailable
 state: microphone off / initial state
 
 ## Comparison evidence
 
-- The supplied live reference opened to a ChatGPT login gate, not the Room Check application, so it could not provide valid visual source evidence.
-- `/workspace/scratch/c3bc836f3eee/dist/index.html` was not present in the workspace.
-- The implementation was visually inspected in the in-app browser and its primary static controls, labels, gauges, and initial state rendered correctly. Console errors and warnings were empty.
-- Focused region comparison was not possible because no source application screenshot or source DOM was available.
+- The supplied mobile screenshot is valid visual source evidence for the compact row treatment.
+- The implementation now uses each band card as a full-bleed level backdrop, with the analyzer fill and segment grid behind the controls.
+- Focused comparison was blocked because a fresh rendered screenshot could not be captured while the browser session was unavailable.
 
 ## Findings
 
-- [blocked] Source comparison could not be completed. The implementation follows the user-provided written specification rather than a captured source visual.
+- [blocked] Rendered implementation evidence is missing for this iteration, so the screenshot comparison cannot be completed.
 
 ## Primary interactions tested
 
@@ -22,11 +21,12 @@ state: microphone off / initial state
 - Hold is disabled until listening starts.
 - Start Listening is rendered as the primary control.
 - Each band exposes logarithmic FROM and TO sliders; the implementation constrains slider positions to 1–24,000 Hz with the start below the end.
+- Each band uses a compact full-bleed analyzer backdrop with all controls layered above it.
 
 ## Fidelity surfaces
 
 - Fonts and typography: implemented with a high-contrast monospace system stack for readable soundcheck display text.
-- Spacing and layout rhythm: responsive stacked cards, mobile safe-area padding, and a compact landscape layout are implemented in CSS.
+- Spacing and layout rhythm: compact full-bleed rows, mobile safe-area padding, and a compact landscape layout are implemented in CSS.
 - Colors and visual tokens: amber low, cyan mid, coral high, dark background, and white peak marker are implemented as explicit tokens.
 - Image quality and asset fidelity: no visual image assets are used.
 - Copy and content: requested labels, frequency ranges, controls, instruction, and caveat are present.

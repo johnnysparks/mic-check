@@ -143,21 +143,29 @@
         --accent: var(--amber);
         position: relative;
         display: grid;
-        gap: 0.78rem;
+        gap: 0.52rem;
         overflow: hidden;
-        padding: clamp(0.9rem, 2.5vw, 1.25rem);
+        isolation: isolate;
+        padding: clamp(0.72rem, 2vw, 1rem);
         border: 1px solid var(--line);
         border-radius: var(--radius);
-        background: linear-gradient(135deg, rgba(22, 27, 37, 0.98), var(--panel));
+        background: var(--panel);
         box-shadow: 0 0.55rem 1.5rem rgba(0, 0, 0, 0.14);
       }
 
       .meter-card::before {
         position: absolute;
         inset: 0 0 auto;
+        z-index: 3;
         height: 0.22rem;
         background: var(--accent);
         content: "";
+        pointer-events: none;
+      }
+
+      .meter-card > *:not(.gauge) {
+        position: relative;
+        z-index: 1;
       }
 
       .meter-card[data-band="mid"] {
@@ -255,6 +263,10 @@
         text-transform: none;
       }
 
+      .range-error:empty {
+        display: none;
+      }
+
       .range-note {
         margin: 0;
         color: #7f8c9e;
@@ -265,38 +277,56 @@
       }
 
       .gauge {
-        position: relative;
-        display: grid;
-        grid-template-columns: repeat(32, minmax(0, 1fr));
-        gap: clamp(2px, 0.45vw, 4px);
-        min-height: clamp(2.1rem, 5vw, 3.45rem);
-        padding: 0.34rem;
-        border: 1px solid #303947;
-        border-radius: 0.5rem;
-        background: #0a0d13;
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        display: block;
+        min-height: 0;
+        padding: 0;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: #0d121a;
+        pointer-events: none;
+      }
+
+      .gauge::before {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: calc(100% * var(--level-ratio, 0));
+        background: var(--accent);
+        content: "";
+        opacity: 0.22;
+        transition: width 120ms linear;
+      }
+
+      .gauge::after {
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent 0,
+          transparent calc(3.125% - 2px),
+          rgba(7, 10, 15, 0.5) calc(3.125% - 2px),
+          rgba(7, 10, 15, 0.5) 3.125%
+        );
+        content: "";
       }
 
       .segment {
-        min-width: 0;
-        border-radius: 0.18rem;
-        background: #242d39;
-        opacity: 0.88;
-        transition: background-color 90ms linear, opacity 90ms linear,
-          box-shadow 90ms linear;
+        display: none;
       }
 
       .segment.is-lit {
-        background: var(--accent);
-        opacity: 1;
-        box-shadow: 0 0 0.6rem color-mix(in srgb, var(--accent) 38%, transparent);
+        display: none;
       }
 
       .peak-marker {
         position: absolute;
-        top: -0.25rem;
-        bottom: -0.25rem;
-        left: calc(0.34rem + (100% - 0.68rem) * var(--peak-ratio));
-        z-index: 2;
+        top: 0.55rem;
+        bottom: 0.55rem;
+        left: calc(100% * var(--peak-ratio, 0));
+        z-index: 3;
         width: 0.2rem;
         border-radius: 0.2rem;
         background: #fff;
@@ -312,6 +342,7 @@
         line-height: 1;
         letter-spacing: -0.04em;
         font-variant-numeric: tabular-nums;
+        text-shadow: 0 0.15rem 0.45rem rgba(0, 0, 0, 0.55);
       }
 
       .db-value.is-active {
@@ -324,6 +355,7 @@
         font-weight: 800;
         letter-spacing: 0.1em;
         text-align: right;
+        text-shadow: 0 0.12rem 0.35rem rgba(0, 0, 0, 0.65);
         white-space: nowrap;
       }
 
@@ -339,6 +371,7 @@
         font-size: 0.65rem;
         font-weight: 700;
         letter-spacing: 0.04em;
+        text-shadow: 0 0.1rem 0.3rem rgba(0, 0, 0, 0.8);
       }
 
       .control-panel {
@@ -920,6 +953,7 @@
           ui.segments.forEach((segment, index) => {
             segment.classList.toggle("is-lit", index < Math.round(levelRatio * SEGMENT_COUNT));
           });
+          ui.gauge.style.setProperty("--level-ratio", levelRatio.toFixed(4));
           ui.gauge.style.setProperty("--peak-ratio", peakRatio.toFixed(4));
           ui.gauge.setAttribute("aria-valuenow", level.toFixed(1));
           ui.gauge.setAttribute(
