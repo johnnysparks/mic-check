@@ -204,12 +204,17 @@
       }
 
       .frequency-field {
-        display: inline-flex;
+        display: grid;
+        grid-template-columns: auto minmax(4.9rem, 6.7rem) auto;
         align-items: center;
         gap: 0.35rem;
+        min-width: min(100%, 12rem);
       }
 
-      .frequency-input {
+      .frequency-value {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: clamp(4.9rem, 12vw, 6.7rem);
         min-height: 2.15rem;
         padding: 0.35rem 0.48rem;
@@ -223,14 +228,18 @@
         letter-spacing: 0;
       }
 
-      .frequency-input:focus-visible {
-        outline: 3px solid var(--cyan);
-        outline-offset: 2px;
+      .frequency-slider {
+        grid-column: 1 / -1;
+        width: 100%;
+        min-width: 10rem;
+        margin: 0.1rem 0 0;
+        accent-color: var(--accent);
+        cursor: pointer;
       }
 
-      .frequency-input.is-invalid {
-        border-color: var(--danger);
-        outline-color: var(--danger);
+      .frequency-slider:focus-visible {
+        outline: 3px solid var(--cyan);
+        outline-offset: 3px;
       }
 
       .range-arrow {
@@ -244,6 +253,15 @@
         font-size: 0.68rem;
         letter-spacing: 0.02em;
         text-transform: none;
+      }
+
+      .range-note {
+        margin: 0;
+        color: #7f8c9e;
+        font-size: clamp(0.65rem, 1.6vw, 0.76rem);
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
       }
 
       .gauge {
@@ -555,14 +573,16 @@
           <div class="band-settings" role="group" aria-label="Set LOW frequency band">
             <label class="frequency-field">
               FROM
-              <input id="low-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="45" aria-label="LOW band start frequency in hertz" />
+              <output id="low-min-value" class="frequency-value">45</output>
               <span>Hz</span>
+              <input id="low-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="377" aria-label="LOW band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <input id="low-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="250" aria-label="LOW band end frequency in hertz" />
+              <output id="low-max-value" class="frequency-value">250</output>
               <span>Hz</span>
+              <input id="low-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="548" aria-label="LOW band end logarithmic frequency slider" />
             </label>
             <span id="range-error-low" class="range-error" aria-live="polite"></span>
           </div>
@@ -596,14 +616,16 @@
           <div class="band-settings" role="group" aria-label="Set MID frequency band">
             <label class="frequency-field">
               FROM
-              <input id="mid-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="250" aria-label="MID band start frequency in hertz" />
+              <output id="mid-min-value" class="frequency-value">250</output>
               <span>Hz</span>
+              <input id="mid-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="548" aria-label="MID band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <input id="mid-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="4000" aria-label="MID band end frequency in hertz" />
+              <output id="mid-max-value" class="frequency-value">4000</output>
               <span>Hz</span>
+              <input id="mid-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="822" aria-label="MID band end logarithmic frequency slider" />
             </label>
             <span id="range-error-mid" class="range-error" aria-live="polite"></span>
           </div>
@@ -637,14 +659,16 @@
           <div class="band-settings" role="group" aria-label="Set HIGH frequency band">
             <label class="frequency-field">
               FROM
-              <input id="high-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="4000" aria-label="HIGH band start frequency in hertz" />
+              <output id="high-min-value" class="frequency-value">4000</output>
               <span>Hz</span>
+              <input id="high-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="822" aria-label="HIGH band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <input id="high-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="12000" aria-label="HIGH band end frequency in hertz" />
+              <output id="high-max-value" class="frequency-value">12000</output>
               <span>Hz</span>
+              <input id="high-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="931" aria-label="HIGH band end logarithmic frequency slider" />
             </label>
             <span id="range-error-high" class="range-error" aria-live="polite"></span>
           </div>
@@ -684,6 +708,7 @@
           </button>
         </div>
         <p id="message" class="message" role="alert"></p>
+        <p class="range-note">Frequency sliders use a logarithmic scale.</p>
         <p class="note">Place the phone at ear height for the most useful room check.</p>
         <p class="caveat">
           This meter shows the combined sound arriving at this phone. It cannot identify
@@ -704,6 +729,7 @@
         const MAX_DB = 0;
         const MIN_FREQUENCY = 1;
         const MAX_FREQUENCY = 24000;
+        const SLIDER_STEPS = 1000;
         const SEGMENT_COUNT = 32;
         const bandDefinitions = [
           { id: "low", label: "Low", minHz: 45, maxHz: 250 },
@@ -756,21 +782,23 @@
             value: document.getElementById(`value-${band.id}`),
             peak: document.getElementById(`peak-${band.id}`),
             range: document.getElementById(`range-${band.id}`),
-            minInput: document.getElementById(`${band.id}-min`),
-            maxInput: document.getElementById(`${band.id}-max`),
+            minReadout: document.getElementById(`${band.id}-min-value`),
+            maxReadout: document.getElementById(`${band.id}-max-value`),
+            minSlider: document.getElementById(`${band.id}-min-slider`),
+            maxSlider: document.getElementById(`${band.id}-max-slider`),
             error: document.getElementById(`range-error-${band.id}`),
           };
-          bandUi[band.id].minInput.addEventListener("input", () => {
-            handleRangeInput(band, "min");
+          bandUi[band.id].minSlider.addEventListener("input", () => {
+            handleSliderInput(band, "min");
           });
-          bandUi[band.id].maxInput.addEventListener("input", () => {
-            handleRangeInput(band, "max");
+          bandUi[band.id].maxSlider.addEventListener("input", () => {
+            handleSliderInput(band, "max");
           });
-          bandUi[band.id].minInput.addEventListener("change", () => {
-            commitBandRange(band, "min");
+          bandUi[band.id].minSlider.addEventListener("change", () => {
+            commitSliderRange(band, "min");
           });
-          bandUi[band.id].maxInput.addEventListener("change", () => {
-            commitBandRange(band, "max");
+          bandUi[band.id].maxSlider.addEventListener("change", () => {
+            commitSliderRange(band, "max");
           });
         }
 
@@ -795,25 +823,40 @@
           return Math.max(MIN_FREQUENCY, Math.min(MAX_FREQUENCY, value));
         }
 
-        function numericInputValue(input) {
-          const value = Number.parseInt(input.value, 10);
-          return Number.isFinite(value) ? value : null;
+        function frequencyToSlider(value) {
+          const logRange = Math.log(MAX_FREQUENCY / MIN_FREQUENCY);
+          return Math.round(
+            (Math.log(clampFrequency(value) / MIN_FREQUENCY) / logRange) * SLIDER_STEPS,
+          );
+        }
+
+        function sliderToFrequency(value) {
+          const logRange = Math.log(MAX_FREQUENCY / MIN_FREQUENCY);
+          const position = Math.max(0, Math.min(SLIDER_STEPS, Number(value) || 0));
+          return Math.round(MIN_FREQUENCY * Math.exp(logRange * (position / SLIDER_STEPS)));
         }
 
         function setRangeValidity(band, valid, text = "") {
           const ui = bandUi[band.id];
-          ui.minInput.classList.toggle("is-invalid", !valid);
-          ui.maxInput.classList.toggle("is-invalid", !valid);
-          ui.minInput.setAttribute("aria-invalid", String(!valid));
-          ui.maxInput.setAttribute("aria-invalid", String(!valid));
+          ui.minSlider.setAttribute("aria-invalid", String(!valid));
+          ui.maxSlider.setAttribute("aria-invalid", String(!valid));
           ui.error.textContent = text;
+        }
+
+        function updateRangeReadouts(band) {
+          const ui = bandUi[band.id];
+          ui.range.textContent = rangeText(band);
+          ui.minReadout.textContent = formatFrequency(band.minHz);
+          ui.maxReadout.textContent = formatFrequency(band.maxHz);
+          ui.minSlider.setAttribute("aria-valuetext", `${formatFrequency(band.minHz)} Hz`);
+          ui.maxSlider.setAttribute("aria-valuetext", `${formatFrequency(band.maxHz)} Hz`);
         }
 
         function syncRangeUi(band) {
           const ui = bandUi[band.id];
-          ui.range.textContent = rangeText(band);
-          ui.minInput.value = String(band.minHz);
-          ui.maxInput.value = String(band.maxHz);
+          updateRangeReadouts(band);
+          ui.minSlider.value = String(frequencyToSlider(band.minHz));
+          ui.maxSlider.value = String(frequencyToSlider(band.maxHz));
           setRangeValidity(band, true);
         }
 
@@ -822,55 +865,44 @@
           renderBand(bandId);
         }
 
-        function handleRangeInput(band, changedPart) {
+        function handleSliderInput(band, changedPart) {
           const ui = bandUi[band.id];
-          const min = numericInputValue(ui.minInput);
-          const max = numericInputValue(ui.maxInput);
-          const valid =
-            min !== null &&
-            max !== null &&
-            min >= MIN_FREQUENCY &&
-            max <= MAX_FREQUENCY &&
-            min < max;
+          let minPosition = Number(ui.minSlider.value);
+          let maxPosition = Number(ui.maxSlider.value);
 
-          if (!valid) {
-            setRangeValidity(
-              band,
-              false,
-              `Set the ${changedPart === "min" ? "start" : "end"} below/above the other frequency.`,
-            );
-            return;
+          if (changedPart === "min") {
+            minPosition = Math.min(minPosition, maxPosition - 1);
+          } else {
+            maxPosition = Math.max(maxPosition, minPosition + 1);
           }
 
-          band.minHz = min;
-          band.maxHz = max;
-          syncRangeUi(band);
+          minPosition = Math.max(0, Math.min(SLIDER_STEPS - 1, minPosition));
+          maxPosition = Math.max(1, Math.min(SLIDER_STEPS, maxPosition));
+
+          while (
+            minPosition < maxPosition &&
+            sliderToFrequency(minPosition) >= sliderToFrequency(maxPosition)
+          ) {
+            if (changedPart === "min" && minPosition > 0) {
+              minPosition -= 1;
+            } else if (changedPart === "max" && maxPosition < SLIDER_STEPS) {
+              maxPosition += 1;
+            } else {
+              break;
+            }
+          }
+
+          ui.minSlider.value = String(minPosition);
+          ui.maxSlider.value = String(maxPosition);
+          band.minHz = sliderToFrequency(minPosition);
+          band.maxHz = sliderToFrequency(maxPosition);
+          updateRangeReadouts(band);
+          setRangeValidity(band, true);
           resetBandPeak(band.id);
         }
 
-        function commitBandRange(band, changedPart) {
-          const ui = bandUi[band.id];
-          let min = numericInputValue(ui.minInput);
-          let max = numericInputValue(ui.maxInput);
-          min = clampFrequency(min === null ? band.minHz : min);
-          max = clampFrequency(max === null ? band.maxHz : max);
-
-          if (min >= max) {
-            if (changedPart === "min") {
-              max = Math.min(MAX_FREQUENCY, min + 1);
-            } else {
-              min = Math.max(MIN_FREQUENCY, max - 1);
-            }
-          }
-          if (min >= max) {
-            min = MIN_FREQUENCY;
-            max = MAX_FREQUENCY;
-          }
-
-          band.minHz = min;
-          band.maxHz = max;
-          syncRangeUi(band);
-          resetBandPeak(band.id);
+        function commitSliderRange(band, changedPart) {
+          handleSliderInput(band, changedPart);
         }
 
         function ratioForDb(value) {

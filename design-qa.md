@@ -21,7 +21,7 @@ state: microphone off / initial state
 - Reset Peaks is enabled in the microphone-off state and leaves the meters safely at their initial state.
 - Hold is disabled until listening starts.
 - Start Listening is rendered as the primary control.
-- Each band exposes editable FROM and TO frequency inputs; the implementation constrains committed values to 1–24,000 Hz with the start below the end.
+- Each band exposes logarithmic FROM and TO sliders; the implementation constrains slider positions to 1–24,000 Hz with the start below the end.
 
 ## Fidelity surfaces
 
