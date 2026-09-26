@@ -601,21 +601,21 @@
         <article class="meter-card" data-band="low">
           <div class="meter-heading">
             <span class="band-name">LOW</span>
-            <span id="range-low" class="band-range">45–250 Hz</span>
+            <span id="range-low" class="band-range">1–203 Hz</span>
           </div>
           <div class="band-settings" role="group" aria-label="Set LOW frequency band">
             <label class="frequency-field">
               FROM
-              <output id="low-min-value" class="frequency-value">45</output>
+              <output id="low-min-value" class="frequency-value">1</output>
               <span>Hz</span>
-              <input id="low-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="377" aria-label="LOW band start logarithmic frequency slider" />
+              <input id="low-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="0" aria-label="LOW band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <output id="low-max-value" class="frequency-value">250</output>
+              <output id="low-max-value" class="frequency-value">203</output>
               <span>Hz</span>
-              <input id="low-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="548" aria-label="LOW band end logarithmic frequency slider" />
+              <input id="low-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="699" aria-label="LOW band end logarithmic frequency slider" />
             </label>
             <span id="range-error-low" class="range-error" aria-live="polite"></span>
           </div>
@@ -644,21 +644,21 @@
         <article class="meter-card" data-band="mid">
           <div class="meter-heading">
             <span class="band-name">MID</span>
-            <span id="range-mid" class="band-range">250–4,000 Hz</span>
+            <span id="range-mid" class="band-range">327–563 Hz</span>
           </div>
           <div class="band-settings" role="group" aria-label="Set MID frequency band">
             <label class="frequency-field">
               FROM
-              <output id="mid-min-value" class="frequency-value">250</output>
+              <output id="mid-min-value" class="frequency-value">327</output>
               <span>Hz</span>
-              <input id="mid-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="548" aria-label="MID band start logarithmic frequency slider" />
+              <input id="mid-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="762" aria-label="MID band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <output id="mid-max-value" class="frequency-value">4000</output>
+              <output id="mid-max-value" class="frequency-value">563</output>
               <span>Hz</span>
-              <input id="mid-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="822" aria-label="MID band end logarithmic frequency slider" />
+              <input id="mid-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="833" aria-label="MID band end logarithmic frequency slider" />
             </label>
             <span id="range-error-mid" class="range-error" aria-live="polite"></span>
           </div>
@@ -687,21 +687,21 @@
         <article class="meter-card" data-band="high">
           <div class="meter-heading">
             <span class="band-name">HIGH</span>
-            <span id="range-high" class="band-range">4,000–12,000 Hz</span>
+            <span id="range-high" class="band-range">347–1,560 Hz</span>
           </div>
           <div class="band-settings" role="group" aria-label="Set HIGH frequency band">
             <label class="frequency-field">
               FROM
-              <output id="high-min-value" class="frequency-value">4000</output>
+              <output id="high-min-value" class="frequency-value">347</output>
               <span>Hz</span>
-              <input id="high-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="822" aria-label="HIGH band start logarithmic frequency slider" />
+              <input id="high-min-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="770" aria-label="HIGH band start logarithmic frequency slider" />
             </label>
             <span class="range-arrow" aria-hidden="true">→</span>
             <label class="frequency-field">
               TO
-              <output id="high-max-value" class="frequency-value">12000</output>
+              <output id="high-max-value" class="frequency-value">1560</output>
               <span>Hz</span>
-              <input id="high-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="931" aria-label="HIGH band end logarithmic frequency slider" />
+              <input id="high-max-slider" class="frequency-slider" type="range" min="0" max="1000" step="1" value="967" aria-label="HIGH band end logarithmic frequency slider" />
             </label>
             <span id="range-error-high" class="range-error" aria-live="polite"></span>
           </div>
@@ -761,13 +761,13 @@
         const MIN_DB = -80;
         const MAX_DB = 0;
         const MIN_FREQUENCY = 1;
-        const MAX_FREQUENCY = 24000;
+        const MAX_FREQUENCY = 2000;
         const SLIDER_STEPS = 1000;
         const SEGMENT_COUNT = 32;
         const bandDefinitions = [
-          { id: "low", label: "Low", minHz: 45, maxHz: 250 },
-          { id: "mid", label: "Mid", minHz: 250, maxHz: 4000 },
-          { id: "high", label: "High", minHz: 4000, maxHz: 12000 },
+          { id: "low", label: "Low", minHz: 1, maxHz: 203 },
+          { id: "mid", label: "Mid", minHz: 327, maxHz: 563 },
+          { id: "high", label: "High", minHz: 347, maxHz: 1560 },
         ];
         const state = {
           audioContext: null,
