@@ -192,6 +192,60 @@
         white-space: nowrap;
       }
 
+      .band-settings {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.45rem 0.6rem;
+        color: var(--muted);
+        font-size: clamp(0.65rem, 1.65vw, 0.76rem);
+        font-weight: 800;
+        letter-spacing: 0.09em;
+      }
+
+      .frequency-field {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .frequency-input {
+        width: clamp(4.9rem, 12vw, 6.7rem);
+        min-height: 2.15rem;
+        padding: 0.35rem 0.48rem;
+        border: 1px solid #3b4757;
+        border-radius: 0.38rem;
+        color: var(--text);
+        background: #0a0d13;
+        font: inherit;
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0;
+      }
+
+      .frequency-input:focus-visible {
+        outline: 3px solid var(--cyan);
+        outline-offset: 2px;
+      }
+
+      .frequency-input.is-invalid {
+        border-color: var(--danger);
+        outline-color: var(--danger);
+      }
+
+      .range-arrow {
+        color: #657286;
+        font-size: 1rem;
+      }
+
+      .range-error {
+        flex-basis: 100%;
+        color: var(--danger);
+        font-size: 0.68rem;
+        letter-spacing: 0.02em;
+        text-transform: none;
+      }
+
       .gauge {
         position: relative;
         display: grid;
@@ -391,6 +445,10 @@
           gap: 0.64rem;
         }
 
+        .band-settings {
+          gap: 0.4rem 0.5rem;
+        }
+
         .controls {
           display: grid;
           grid-template-columns: 1fr 1fr;
@@ -425,6 +483,16 @@
         .meter-card {
           min-width: 0;
           padding: 0.85rem;
+        }
+
+        .band-settings {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 0.3rem;
+        }
+
+        .range-arrow {
+          display: none;
         }
 
         .meter-heading,
@@ -482,7 +550,21 @@
         <article class="meter-card" data-band="low">
           <div class="meter-heading">
             <span class="band-name">LOW</span>
-            <span class="band-range">45–250 Hz</span>
+            <span id="range-low" class="band-range">45–250 Hz</span>
+          </div>
+          <div class="band-settings" role="group" aria-label="Set LOW frequency band">
+            <label class="frequency-field">
+              FROM
+              <input id="low-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="45" aria-label="LOW band start frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span class="range-arrow" aria-hidden="true">→</span>
+            <label class="frequency-field">
+              TO
+              <input id="low-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="250" aria-label="LOW band end frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span id="range-error-low" class="range-error" aria-live="polite"></span>
           </div>
           <div
             id="gauge-low"
@@ -509,7 +591,21 @@
         <article class="meter-card" data-band="mid">
           <div class="meter-heading">
             <span class="band-name">MID</span>
-            <span class="band-range">250–4,000 Hz</span>
+            <span id="range-mid" class="band-range">250–4,000 Hz</span>
+          </div>
+          <div class="band-settings" role="group" aria-label="Set MID frequency band">
+            <label class="frequency-field">
+              FROM
+              <input id="mid-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="250" aria-label="MID band start frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span class="range-arrow" aria-hidden="true">→</span>
+            <label class="frequency-field">
+              TO
+              <input id="mid-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="4000" aria-label="MID band end frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span id="range-error-mid" class="range-error" aria-live="polite"></span>
           </div>
           <div
             id="gauge-mid"
@@ -536,7 +632,21 @@
         <article class="meter-card" data-band="high">
           <div class="meter-heading">
             <span class="band-name">HIGH</span>
-            <span class="band-range">4,000–12,000 Hz</span>
+            <span id="range-high" class="band-range">4,000–12,000 Hz</span>
+          </div>
+          <div class="band-settings" role="group" aria-label="Set HIGH frequency band">
+            <label class="frequency-field">
+              FROM
+              <input id="high-min" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="4000" aria-label="HIGH band start frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span class="range-arrow" aria-hidden="true">→</span>
+            <label class="frequency-field">
+              TO
+              <input id="high-max" class="frequency-input" type="number" min="1" max="24000" step="1" inputmode="numeric" value="12000" aria-label="HIGH band end frequency in hertz" />
+              <span>Hz</span>
+            </label>
+            <span id="range-error-high" class="range-error" aria-live="polite"></span>
           </div>
           <div
             id="gauge-high"
@@ -592,6 +702,8 @@
 
         const MIN_DB = -80;
         const MAX_DB = 0;
+        const MIN_FREQUENCY = 1;
+        const MAX_FREQUENCY = 24000;
         const SEGMENT_COUNT = 32;
         const bandDefinitions = [
           { id: "low", label: "Low", minHz: 45, maxHz: 250 },
@@ -643,7 +755,23 @@
             marker: gauge.querySelector(".peak-marker"),
             value: document.getElementById(`value-${band.id}`),
             peak: document.getElementById(`peak-${band.id}`),
+            range: document.getElementById(`range-${band.id}`),
+            minInput: document.getElementById(`${band.id}-min`),
+            maxInput: document.getElementById(`${band.id}-max`),
+            error: document.getElementById(`range-error-${band.id}`),
           };
+          bandUi[band.id].minInput.addEventListener("input", () => {
+            handleRangeInput(band, "min");
+          });
+          bandUi[band.id].maxInput.addEventListener("input", () => {
+            handleRangeInput(band, "max");
+          });
+          bandUi[band.id].minInput.addEventListener("change", () => {
+            commitBandRange(band, "min");
+          });
+          bandUi[band.id].maxInput.addEventListener("change", () => {
+            commitBandRange(band, "max");
+          });
         }
 
         function setMessage(text) {
@@ -653,6 +781,96 @@
 
         function formatDb(value) {
           return `${value.toFixed(1)} dB`;
+        }
+
+        function formatFrequency(value) {
+          return value.toLocaleString("en-US");
+        }
+
+        function rangeText(band) {
+          return `${formatFrequency(band.minHz)}–${formatFrequency(band.maxHz)} Hz`;
+        }
+
+        function clampFrequency(value) {
+          return Math.max(MIN_FREQUENCY, Math.min(MAX_FREQUENCY, value));
+        }
+
+        function numericInputValue(input) {
+          const value = Number.parseInt(input.value, 10);
+          return Number.isFinite(value) ? value : null;
+        }
+
+        function setRangeValidity(band, valid, text = "") {
+          const ui = bandUi[band.id];
+          ui.minInput.classList.toggle("is-invalid", !valid);
+          ui.maxInput.classList.toggle("is-invalid", !valid);
+          ui.minInput.setAttribute("aria-invalid", String(!valid));
+          ui.maxInput.setAttribute("aria-invalid", String(!valid));
+          ui.error.textContent = text;
+        }
+
+        function syncRangeUi(band) {
+          const ui = bandUi[band.id];
+          ui.range.textContent = rangeText(band);
+          ui.minInput.value = String(band.minHz);
+          ui.maxInput.value = String(band.maxHz);
+          setRangeValidity(band, true);
+        }
+
+        function resetBandPeak(bandId) {
+          state.peaks[bandId] = state.listening ? state.levels[bandId] : MIN_DB;
+          renderBand(bandId);
+        }
+
+        function handleRangeInput(band, changedPart) {
+          const ui = bandUi[band.id];
+          const min = numericInputValue(ui.minInput);
+          const max = numericInputValue(ui.maxInput);
+          const valid =
+            min !== null &&
+            max !== null &&
+            min >= MIN_FREQUENCY &&
+            max <= MAX_FREQUENCY &&
+            min < max;
+
+          if (!valid) {
+            setRangeValidity(
+              band,
+              false,
+              `Set the ${changedPart === "min" ? "start" : "end"} below/above the other frequency.`,
+            );
+            return;
+          }
+
+          band.minHz = min;
+          band.maxHz = max;
+          syncRangeUi(band);
+          resetBandPeak(band.id);
+        }
+
+        function commitBandRange(band, changedPart) {
+          const ui = bandUi[band.id];
+          let min = numericInputValue(ui.minInput);
+          let max = numericInputValue(ui.maxInput);
+          min = clampFrequency(min === null ? band.minHz : min);
+          max = clampFrequency(max === null ? band.maxHz : max);
+
+          if (min >= max) {
+            if (changedPart === "min") {
+              max = Math.min(MAX_FREQUENCY, min + 1);
+            } else {
+              min = Math.max(MIN_FREQUENCY, max - 1);
+            }
+          }
+          if (min >= max) {
+            min = MIN_FREQUENCY;
+            max = MAX_FREQUENCY;
+          }
+
+          band.minHz = min;
+          band.maxHz = max;
+          syncRangeUi(band);
+          resetBandPeak(band.id);
         }
 
         function ratioForDb(value) {
@@ -682,7 +900,10 @@
         }
 
         function renderAllBands() {
-          bandDefinitions.forEach((band) => renderBand(band.id));
+          bandDefinitions.forEach((band) => {
+            syncRangeUi(band);
+            renderBand(band.id);
+          });
         }
 
         function setStatus(listening) {
